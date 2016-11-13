@@ -1,0 +1,92 @@
+{
+  "AWSEBDockerrunVersion": 2,
+  "volumes": [
+    {
+      "name": "php-app",
+      "host": {
+        "sourcePath": "/var/app/current/php-app"
+      }
+    },
+    {
+      "name": "nginx-proxy-nginx",
+      "host": {
+        "sourcePath": "/var/app/current/proxy/nginx.conf"
+      }
+    },
+    {
+      "name": "nginx-proxy-conf",
+      "host": {
+        "sourcePath": "/var/app/current/proxy/conf.d"
+      }
+    },
+    {
+      "name": "php-fpm-conf",
+      "host": {
+        "sourcePath": "/var/app/current/proxy/www.conf"
+      }
+    }
+  ],
+  "containerDefinitions": [
+    {
+      "name": "php-app",
+      "image": "volkana/eb-docker-php7",
+      "essential": true,
+      "memory": 512,
+      "mountPoints": [
+        {
+          "sourceVolume": "php-app",
+          "containerPath": "/var/www/html",
+          "readOnly": false
+        },
+        {
+          "sourceVolume": "awseb-logs-php-app",
+          "containerPath": "/var/log/php-app"
+        },
+        {
+          "sourceVolume": "php-fpm-conf",
+          "containerPath": "/usr/local/etc/php-fpm.d/www.conf",
+          "readOnly": true
+        }
+      ],
+      "command": [
+        "/bin/bash", "/var/www/html/php-run.sh"
+      ]
+    },
+    {
+      "name": "nginx-proxy",
+      "image": "nginx",
+      "essential": true,
+      "memory": 256,
+      "portMappings": [
+        {
+          "hostPort": 80,
+          "containerPort": 80
+        }
+      ],
+      "links": [
+        "php-app"
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "php-app",
+          "containerPath": "/var/www/html",
+          "readOnly": false
+        },
+        {
+          "sourceVolume": "awseb-logs-nginx-proxy",
+          "containerPath": "/var/log/nginx"
+        },
+        {
+          "sourceVolume": "nginx-proxy-nginx",
+          "containerPath": "/etc/nginx/nginx.conf",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "nginx-proxy-conf",
+          "containerPath": "/etc/nginx/conf.d",
+          "readOnly": true
+        }
+      ]
+    }
+  ]
+}
